@@ -4,34 +4,38 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 #include "figure.h"
+#include "processor.h"
+
+inline std::mutex mut;
+inline std::condition_variable con;
 
 struct exec{
 
-    static void worker(exec* one);
-
-    void exec_set(std::vector<std::unique_ptr<figure>> one){
-        data=std::move(one);
-        std::thread work{worker,this};
-        while(!flag){
-            std::cout << ".";
-        }
-        flag= false;
-        work.join();
+    exec(){
+        screen_writer pp1;
+        file_writer pp2;
+        std::unique_ptr<screen_writer> p1=std::make_unique<screen_writer>(pp1);
+        std::unique_ptr<file_writer> p2=std::make_unique<file_writer>(pp2);
+        processors.push_back(std::move(p1));
+        processors.push_back(std::move(p2));
     }
 
-private:
-    mutable bool flag=false;
-    std::vector<std::unique_ptr<figure>> data;
-    screen_writer screen;
-    file_writer file;
-};
+    void exec_set(std::vector<std::unique_ptr<figure>> data);
 
-void exec::worker(exec *one) {
-    one->flag=true;
-    std::cout <<"\n";
-    one->screen.process(one->data);
-    one->file.process(one->data);
-}
+    static void worker(exec* one);
+
+    std::thread work{worker,this};
+
+    bool working=false;
+    bool doing=false;
+
+private:
+    std::vector<std::unique_ptr<figure>> data;
+    std::vector<std::unique_ptr<processor>> processors;
+};
 
 #endif

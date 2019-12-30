@@ -8,7 +8,10 @@
 #include <thread>
 #include <fstream>
 #include <memory>
+#include <mutex>
+#include <condition_variable>
 #include "executor.h"
+
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -22,6 +25,7 @@ int main(int argc, char *argv[]) {
     std::unique_ptr<figure> value;
     std::string figures;
     while (std::cin >> figures) {
+        std::unique_lock<std::mutex> lock(mut);
         if(figures == "five_angles"){
             std::unique_ptr<figure> new_figure;
             new_figure=std::make_unique<five_angles>(five_angles(std::cin));
@@ -35,12 +39,19 @@ int main(int argc, char *argv[]) {
             new_figure=std::make_unique<eight_angles>( eight_angles(std::cin));
             buffer.push_back(std::move(new_figure));
         }
+        make.doing= true;
         if (buffer.size() != buffer_size) {
             continue;
         }else {
             make.exec_set(std::move(buffer));
+            con.notify_one();
             buffer.clear();
+
         }
     }
+    make.doing= false;
+    make.working = true;
+    con.notify_one();
+    make.work.join();
     return 0;
 }
