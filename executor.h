@@ -10,9 +10,6 @@
 #include "figure.h"
 #include "processor.h"
 
-inline std::mutex mut;
-inline std::condition_variable con;
-
 struct exec{
 
     exec(){
@@ -32,7 +29,8 @@ struct exec{
 
     bool working=false;
     bool doing=false;
-
+    std::mutex mut;
+    std::condition_variable con;
 private:
     std::vector<std::unique_ptr<figure>> data;
     std::vector<std::unique_ptr<processor>> processors;
